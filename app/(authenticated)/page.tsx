@@ -1,7 +1,10 @@
+import { ArrowLeft } from "lucide-react";
+
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      API Home
-    </div>
+    <main className="flex space-x-2 items-center animate-pulse">
+      <ArrowLeft className="w-12 h-12" />
+      <h1 className="font-bold">Get started by creating a new document</h1>
+    </main>
   );
 }

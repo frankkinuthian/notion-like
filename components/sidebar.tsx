@@ -18,6 +18,7 @@ import { useUser } from '@clerk/nextjs';
 import { collectionGroup, where, query, DocumentData, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase';
 import SidebarOption from './sidebar-option';
+import { Separator } from './ui/separator';
 
 interface RoomDocument extends DocumentData {
 	// Written as `new Date()` by the server action, so it comes back as a Timestamp.
@@ -99,7 +100,16 @@ const Sidebar = () => {
 			</div>
 			{/* List.... */}
 
+			<Separator />
 			{/* Shared with me */}
+			{groupedData.editor.length > 0 && (
+				<>
+					<h2 className="text-gray-500 font-semibold text-sm">Shared with me</h2>
+					{groupedData.editor.map((doc) => (
+						<SidebarOption key={doc.id} id={doc.id} href={`/doc/${doc.id}`} />
+					))}
+				</>
+			)}
 			{/* List... */}
 		</>
 	);
