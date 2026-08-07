@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { ClientSideSuspense, RoomProvider as RoomProviderWrapper } from '@liveblocks/react/suspense';
 import LoadingSpinner from '../loading-spinner';

@@ -1,19 +1,13 @@
-'use client';
-
-import * as React from 'react';
 import { auth } from '@clerk/nextjs/server';
+import LiveBlocksRoomProvider from '@/components/providers/room-provider';
 
-const DocumentPageLayout = async ({
-	children,
-	params: { id },
-}: {
-	children: React.ReactNode;
-	params: {
-		id: string;
-	};
-}) => {
+const DocumentPageLayout = async ({ children, params }: LayoutProps<'/doc/[id]'>) => {
 	const { userId } = await auth.protect();
-	return <div>{children}</div>;
+	if (!userId) return null;
+
+	const { id } = await params;
+
+	return <LiveBlocksRoomProvider roomId={id}>{children}</LiveBlocksRoomProvider>;
 };
 
 export default DocumentPageLayout;
