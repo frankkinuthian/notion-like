@@ -33,9 +33,18 @@ const LiveBlocksRoomProvider = ({ roomId, children }: LiveBlocksRoomProviderProp
 		});
 	});
 
-	// Deriving this instead of clearing state in an effect means navigating to a
-	// different document drops a stale error with no extra render pass.
+	// Guards against a failure from a previous room rendering over the current
+	// one during the render pass where `roomId` has changed but the effect below
+	// has not run yet.
 	const activeFailure = failure?.roomId === roomId ? failure : null;
+
+	// This layout is reused rather than remounted when only the `[id]` segment
+	// changes, so the failure has to be cleared explicitly. Without this,
+	// navigating away from a failed document and back would show the stale
+	// error instead of attempting to connect again.
+	React.useEffect(() => {
+		setFailure(null);
+	}, [roomId]);
 
 	return (
 		<RoomProviderWrapper
