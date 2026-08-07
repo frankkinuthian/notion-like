@@ -23,6 +23,9 @@ importers:
       '@liveblocks/client':
         specifier: ^3.23.1
         version: 3.23.1(@types/json-schema@7.0.15)
+      '@liveblocks/node':
+        specifier: ^3.23.1
+        version: 3.23.1(@types/json-schema@7.0.15)
       '@liveblocks/react':
         specifier: ^3.23.1
         version: 3.23.1(@types/json-schema@7.0.15)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react@19.2.8)
@@ -888,6 +891,9 @@ packages:
     resolution: {integrity: sha512-6N6QEyzy2VDFxxn2aAPjEXSnzho387LLGdxvaC2Fo50qDhS1SeSuDhbP0Oscx+5LsQTNAg7vpw+1UPpCB+o35g==}
     peerDependencies:
       '@types/json-schema': ^7
+
+  '@liveblocks/node@3.23.1':
+    resolution: {integrity: sha512-D33zOK3n9bNXyXeKf5YWMV8wLi/76Fjt239Mzfh/9cnXpKy5HwxB+bWhdYBJLUaqxz1NODwJ5Dai1x8/YPZaRw==}
 
   '@liveblocks/react-blocknote@3.23.1':
     resolution: {integrity: sha512-1z7J6t+Jl/EcV+LrINywaOSqXhYA36IEG9Ry//dIBuiHBWH+qg4g/GdM89xgc57JOG+rTdmtUqQB9dCkWSHNUA==}
@@ -6160,6 +6166,17 @@ snapshots:
     dependencies:
       '@types/json-schema': 7.0.15
 
+  '@liveblocks/node@3.23.1(@types/json-schema@7.0.15)':
+    dependencies:
+      '@liveblocks/core': 3.23.1(@types/json-schema@7.0.15)
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
+      marked: 15.0.12
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - '@types/json-schema'
+      - encoding
+
   '@liveblocks/react-blocknote@3.23.1(ee7b215d6b027279f192a559da10e487)':
     dependencies:
       '@blocknote/core': 0.52.1(@types/hast@3.0.5)(y-prosemirror@1.3.7(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.2)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32)
@@ -9581,7 +9598,6 @@ snapshots:
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
-    optional: true
 
   node-fetch@3.3.2:
     dependencies:
@@ -10581,8 +10597,7 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
-  tr46@0.0.3:
-    optional: true
+  tr46@0.0.3: {}
 
   ts-api-utils@2.5.0(typescript@7.0.2):
     dependencies:
@@ -10788,8 +10803,7 @@ snapshots:
 
   web-vitals@4.2.4: {}
 
-  webidl-conversions@3.0.1:
-    optional: true
+  webidl-conversions@3.0.1: {}
 
   websocket-driver@0.7.5:
     dependencies:
@@ -10803,7 +10817,6 @@ snapshots:
     dependencies:
       tr46: 0.0.3
       webidl-conversions: 3.0.1
-    optional: true
 
   which-boxed-primitive@1.1.1:
     dependencies:
