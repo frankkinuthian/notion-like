@@ -7,11 +7,14 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import Editor from './editor';
+import useOwner from '@/lib/hooks/useOwner';
+import DeleteDocument from './delete-doc';
 
 const Document = ({ id }: { id: string }) => {
 	const [data, loading, error] = useDocumentData(doc(db, 'documents', id));
 	const [input, setInput] = React.useState('');
 	const [isUpdating, startTransition] = React.useTransition();
+	const isOwner = useOwner();
 
 	// Load title on mount
 	React.useEffect(() => {
@@ -47,6 +50,14 @@ const Document = ({ id }: { id: string }) => {
 					 * isOwner && InviteUser flow
 					 * DeleteDocument
 					 */}
+					{isOwner && (
+						<>
+							{/* Invite user */}
+							<Button variant={'outline'}>Invite User</Button>
+							{/* Delete Document */}
+							<DeleteDocument />
+						</>
+					)}
 				</form>
 			</div>
 			<div>
