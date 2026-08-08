@@ -1,72 +1,44 @@
 'use client';
 
 import * as React from 'react';
-import { useRoom, useSelf } from '@liveblocks/react/suspense';
-import * as Y from 'yjs';
-import { LiveblocksYjsProvider } from '@liveblocks/yjs';
 import { Button } from './ui/button';
 import { MoonIcon, SunIcon } from 'lucide-react';
 import { BlockNoteView } from '@blocknote/shadcn';
-import { BlockNoteEditor } from '@blocknote/core';
-import { useCreateBlockNote } from '@blocknote/react';
-import { withCollaboration } from '@blocknote/core/yjs';
+import { useCreateBlockNoteWithLiveblocks, useIsEditorReady } from '@liveblocks/react-blocknote';
+import LoadingSpinner from './loading-spinner';
 import '@blocknote/shadcn/style.css';
-import stringToColor from '@/lib/helpers/string-to-color';
-
-type EditorProps = {
-	doc: Y.Doc;
-	provider: any;
-	darkMode: boolean;
-};
-
-const BlockNote = ({ doc, provider, darkMode }: EditorProps) => {
-	const userInfo = useSelf((me) => me.info);
-
-	const editor: BlockNoteEditor = useCreateBlockNote(
-		withCollaboration({
-			collaboration: {
-				provider,
-				fragment: doc.getXmlFragment('document-store'),
-				user: {
-					name: userInfo?.name,
-					color: stringToColor(userInfo?.email),
-				},
-			},
-		}),
-	);
-
-	return (
-		<div className="relative max-w-6xl">
-			<BlockNoteView editor={editor} className="min-h-screen" theme={darkMode ? 'light' : 'dark'} />
-		</div>
-	);
-};
+import '@liveblocks/react-blocknote/styles.css';
 
 const Editor = () => {
-	const room = useRoom();
-	const [doc, setDoc] = React.useState<Y.Doc>();
-	const [provider, setProvider] = React.useState<LiveblocksYjsProvider>();
 	const [darkMode, setDarkMode] = React.useState(false);
+
+	// Owns the Y.Doc, the Yjs provider and the awareness lifecycle internally.
+	// Because it sets awareness up outside the render phase, it avoids the
+	// presence write that Liveblocks' awareness performs, which is what caused
+	// the "cannot update a component while rendering" error when wiring
+	// @blocknote/core's collaboration extension up by hand.
+	//
+	// The collaborator name and cursor colour come from the `userInfo` set in
+	// prepareSession() in app/api/auth-endpoint/route.ts.
+	//
+	// Uses the default "default" Y.Doc fragment rather than the
+	// "document-store" fragment the hand-rolled setup wrote to, since that one
+	// was written by @blocknote/core's own ySync implementation.
+	const editor = useCreateBlockNoteWithLiveblocks({});
+
+	// True once the Yjs provider reaches "synchronizing"/"synchronized".
+	// BlockNote seeds the editor with a single empty paragraph before Yjs has
+	// synced. Mounting BlockNoteView against that unsynced document means a
+	// remote caret can arrive pointing at a position that does not exist yet,
+	// which throws "RangeError: Position N out of range" as soon as a second
+	// client joins the room.
+	const isEditorReady = useIsEditorReady();
 
 	const style = `hover:text-white ${
 		darkMode
 			? 'text-gray-300 bg-gray-700 hover:bg-gray-100 hover:text-gray-700'
 			: 'text-gray-700 bg-gray-200 hover:bg-gray-300 hover:text-gray-700'
 	}`;
-
-	React.useEffect(() => {
-		const yDoc = new Y.Doc();
-		const yProvider = new LiveblocksYjsProvider(room, yDoc);
-		setDoc(yDoc);
-		setProvider(yProvider);
-
-		return () => {
-			yDoc?.destroy();
-			yProvider?.destroy();
-		};
-	}, [room]);
-
-	if (!doc || !provider) return null;
 
 	return (
 		<div className="max-w-6xl mx-auto">
@@ -76,13 +48,23 @@ const Editor = () => {
 				{/* ChatToDocument - AI */}
 
 				{/* Dark Mode toggle */}
-				<Button className={style} onClick={() => setDarkMode(!darkMode)}>
+				<Button
+					className={style}
+					onClick={() => setDarkMode(!darkMode)}
+					aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+				>
 					{darkMode ? <SunIcon /> : <MoonIcon />}
 				</Button>
 			</div>
 
 			{/* BlockNote */}
-			<BlockNote doc={doc} provider={provider} darkMode={darkMode} />
+			<div className="relative max-w-6xl">
+				{isEditorReady ? (
+					<BlockNoteView editor={editor} className="min-h-screen" theme={darkMode ? 'dark' : 'light'} />
+				) : (
+					<LoadingSpinner />
+				)}
+			</div>
 		</div>
 	);
 };
