@@ -6,19 +6,38 @@ import { auth } from '@clerk/nextjs/server';
 import { tryCatch } from '@/lib/helpers/tryCatch';
 
 export async function createNewDocument() {
-	const { userId, sessionClaims } = await auth.protect();
+	const { sessionClaims } = await auth.protect();
+	const email = sessionClaims?.email;
 
-	const documentCollectionReference = adminDb.collection('documents');
-	const docRef = await documentCollectionReference.add({
-		title: 'New Doc',
-	});
+	if (!email) {
+		console.error('Error creating document: no email on session claims');
+		return { documentId: null };
+	}
 
-	await adminDb.collection('users').doc(sessionClaims?.email!).collection('rooms').doc(docRef.id).set({
-		userId: sessionClaims?.email!,
-		role: 'owner',
-		createdAt: new Date(),
-		roomId: docRef.id,
-	});
+	// Create the document itself.
+	const { data: docRef, error: documentError } = await tryCatch(
+		adminDb.collection('documents').add({ title: 'New Doc' }),
+	);
+
+	if (documentError) {
+		console.error('Error creating document:', documentError);
+		return { documentId: null };
+	}
+
+	// Record the creator's ownership of the matching room.
+	const { error: roomError } = await tryCatch(
+		adminDb.collection('users').doc(email).collection('rooms').doc(docRef.id).set({
+			userId: email,
+			role: 'owner',
+			createdAt: new Date(),
+			roomId: docRef.id,
+		}),
+	);
+
+	if (roomError) {
+		console.error('Error creating room reference:', roomError);
+		return { documentId: null };
+	}
 
 	return { documentId: docRef.id };
 }
@@ -61,6 +80,29 @@ export async function deleteDocument(roomId: string) {
 
 	if (liveblocksError) {
 		console.error('Error deleting Liveblocks room:', liveblocksError);
+		return { success: false };
+	}
+
+	return { success: true };
+}
+
+export async function inviteUserToDoc(roomId: string, email: string) {
+	const { userId } = await auth.protect();
+	if (!userId) return { success: false };
+
+	// Grant the invitee editor access by writing a room reference under their
+	// own user document, which is what the auth endpoint checks on connect.
+	const { error } = await tryCatch(
+		adminDb.collection('users').doc(email).collection('rooms').doc(roomId).set({
+			userId: email,
+			role: 'editor',
+			createdAt: new Date(),
+			roomId,
+		}),
+	);
+
+	if (error) {
+		console.error('Error inviting user to document:', error);
 		return { success: false };
 	}
 
