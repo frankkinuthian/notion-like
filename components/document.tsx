@@ -11,6 +11,7 @@ import useOwner from '@/lib/hooks/useOwner';
 import DeleteDocument from './delete-doc';
 import InviteUser from './invite-user';
 import ManageUsers from './manage-users';
+import Avatars from './avatars';
 
 const Document = ({ id }: { id: string }) => {
 	const [data, loading, error] = useDocumentData(doc(db, 'documents', id));
@@ -67,6 +68,7 @@ const Document = ({ id }: { id: string }) => {
 				<ManageUsers />
 
 				{/* Avatars */}
+				<Avatars />
 			</div>
 
 			<hr className="pb-10" />
