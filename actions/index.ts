@@ -2,6 +2,7 @@
 
 import { adminDb } from '@/firebase/admin';
 import liveblocks from '@/lib/liveblocks';
+import { LiveblocksError } from '@liveblocks/node';
 import { auth } from '@clerk/nextjs/server';
 import { tryCatch } from '@/lib/helpers/tryCatch';
 
@@ -46,11 +47,21 @@ export async function deleteDocument(roomId: string) {
 	const { userId } = await auth.protect();
 	if (!userId) return { success: false };
 
-	// Delete the document itself.
-	const { error: documentError } = await tryCatch(adminDb.collection('documents').doc(roomId).delete());
+	// This spans two systems, so it can never be truly atomic. Instead it is
+	// ordered to always be safe to retry.
+	//
+	// Liveblocks goes first because it is the step that cannot participate in a
+	// Firestore batch. If it fails, nothing has been written yet and the whole
+	// action can simply be run again.
+	const { error: liveblocksError } = await tryCatch(liveblocks.deleteRoom(roomId));
 
-	if (documentError) {
-		console.error('Error deleting document:', documentError);
+	// A 404 means the room was already removed, most likely by an earlier run
+	// that failed further down. Tolerating it is what makes a retry able to get
+	// past this step instead of failing here forever.
+	const roomAlreadyGone = liveblocksError instanceof LiveblocksError && liveblocksError.status === 404;
+
+	if (liveblocksError && !roomAlreadyGone) {
+		console.error('Error deleting Liveblocks room:', liveblocksError);
 		return { success: false };
 	}
 
@@ -64,22 +75,18 @@ export async function deleteDocument(roomId: string) {
 		return { success: false };
 	}
 
-	// Remove them all in one batch.
+	// Delete the document and every reference to it in a single batch. Keeping
+	// these together matters: the sidebar is driven by the room references, so
+	// deleting the document on its own would leave a row in everyone's sidebar
+	// pointing at a document that no longer exists.
 	const batch = adminDb.batch();
+	batch.delete(adminDb.collection('documents').doc(roomId));
 	rooms.docs.forEach((doc) => batch.delete(doc.ref));
 
 	const { error: batchError } = await tryCatch(batch.commit());
 
 	if (batchError) {
-		console.error('Error deleting room references:', batchError);
-		return { success: false };
-	}
-
-	// Finally drop the Liveblocks room holding the collaborative content.
-	const { error: liveblocksError } = await tryCatch(liveblocks.deleteRoom(roomId));
-
-	if (liveblocksError) {
-		console.error('Error deleting Liveblocks room:', liveblocksError);
+		console.error('Error deleting document and room references:', batchError);
 		return { success: false };
 	}
 
@@ -103,6 +110,22 @@ export async function inviteUserToDoc(roomId: string, email: string) {
 
 	if (error) {
 		console.error('Error inviting user to document:', error);
+		return { success: false };
+	}
+
+	return { success: true };
+}
+
+export async function removeUserFromDoc(roomId: string, email: string) {
+	const { userId } = await auth.protect();
+	if (!userId) return { success: false };
+
+	// Revoke access by removing the room reference from under their own user
+	// document, which is what the auth endpoint checks on connect.
+	const { error } = await tryCatch(adminDb.collection('users').doc(email).collection('rooms').doc(roomId).delete());
+
+	if (error) {
+		console.error('Error removing user from document:', error);
 		return { success: false };
 	}
 

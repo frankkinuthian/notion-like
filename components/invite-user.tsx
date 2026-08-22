@@ -14,7 +14,7 @@ import {
 import { Button } from './ui/button';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { deleteDocument, inviteUserToDoc } from '@/actions';
+import { inviteUserToDoc } from '@/actions';
 import { Input } from './ui/input';
 
 const InviteUser = () => {

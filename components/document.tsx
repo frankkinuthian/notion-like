@@ -10,6 +10,7 @@ import Editor from './editor';
 import useOwner from '@/lib/hooks/useOwner';
 import DeleteDocument from './delete-doc';
 import InviteUser from './invite-user';
+import ManageUsers from './manage-users';
 
 const Document = ({ id }: { id: string }) => {
 	const [data, loading, error] = useDocumentData(doc(db, 'documents', id));
@@ -61,8 +62,9 @@ const Document = ({ id }: { id: string }) => {
 					)}
 				</form>
 			</div>
-			<div>
+			<div className="flex max-w-6xl mx-auto justify-between items-center mb-5">
 				{/* Manage Users */}
+				<ManageUsers />
 
 				{/* Avatars */}
 			</div>
