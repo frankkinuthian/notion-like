@@ -5,9 +5,12 @@ import { Button } from './ui/button';
 import { MoonIcon, SunIcon } from 'lucide-react';
 import { BlockNoteView } from '@blocknote/shadcn';
 import { useCreateBlockNoteWithLiveblocks, useIsEditorReady } from '@liveblocks/react-blocknote';
+import { useRoom } from '@liveblocks/react/suspense';
+import { getYjsProviderForRoom } from '@liveblocks/yjs';
 import LoadingSpinner from './loading-spinner';
 import '@blocknote/shadcn/style.css';
 import '@liveblocks/react-blocknote/styles.css';
+import TranslateDocSummary from './translate-document-summary';
 
 const Editor = () => {
 	const [darkMode, setDarkMode] = React.useState(false);
@@ -34,6 +37,12 @@ const Editor = () => {
 	// client joins the room.
 	const isEditorReady = useIsEditorReady();
 
+	// getYjsProviderForRoom caches providers in a WeakMap keyed by room, so this
+	// returns the very provider the Liveblocks extension already created rather
+	// than opening a second one that would double-apply updates.
+	const room = useRoom();
+	const doc = getYjsProviderForRoom(room).getYDoc();
+
 	const style = `hover:text-white ${
 		darkMode
 			? 'text-gray-300 bg-gray-700 hover:bg-gray-100 hover:text-gray-700'
@@ -45,6 +54,7 @@ const Editor = () => {
 			<div className="flex items-center gap-2 justify-end mb-10">
 				{/* Features */}
 				{/* TranslateDoc - AI */}
+				<TranslateDocSummary doc={doc} />
 				{/* ChatToDocument - AI */}
 
 				{/* Dark Mode toggle */}
