@@ -9,6 +9,7 @@ import LoadingSpinner from './loading-spinner';
 import '@blocknote/shadcn/style.css';
 import '@liveblocks/react-blocknote/styles.css';
 import TranslateDocSummary from './translate-document-summary';
+import ChatWithDocument from './chat-with-document';
 
 const Editor = () => {
 	const [darkMode, setDarkMode] = React.useState(false);
@@ -44,6 +45,7 @@ const Editor = () => {
 				{/* TranslateDoc - AI */}
 				<TranslateDocSummary editor={editor} />
 				{/* ChatToDocument - AI */}
+				<ChatWithDocument editor={editor} />
 
 				{/* Dark Mode toggle */}
 				<Button
