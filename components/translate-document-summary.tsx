@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import * as Y from 'yjs';
+import type { useCreateBlockNoteWithLiveblocks } from '@liveblocks/react-blocknote';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -13,7 +13,13 @@ type Language = 'english' | 'spanish' | 'portuguese' | 'swahili' | 'french' | 'g
 
 const languages: Language[] = ['english', 'spanish', 'portuguese', 'swahili', 'french', 'german'];
 
-const TranslateDocSummary = ({ doc }: { doc: Y.Doc }) => {
+/**
+ * The Liveblocks wrapper widens BlockNote's schema with its own mention nodes,
+ * so the editor type is derived from the hook rather than written out.
+ */
+type LiveblocksBlockNoteEditor = ReturnType<typeof useCreateBlockNoteWithLiveblocks>;
+
+const TranslateDocSummary = ({ editor }: { editor: LiveblocksBlockNoteEditor }) => {
 	const [isOpen, setIsOpen] = React.useState(false);
 	const [language, setLanguage] = React.useState<string>('');
 	const [summary, setSummary] = React.useState('');
@@ -25,26 +31,38 @@ const TranslateDocSummary = ({ doc }: { doc: Y.Doc }) => {
 		e.preventDefault();
 
 		startTransition(async () => {
-			// "default" must match the `field` the Liveblocks BlockNote extension
-			// uses in editor.tsx. It is that extension's default value, so this is
-			// only correct while editor.tsx does not pass a `field` option.
-			const documentData = doc.getXmlFragment('default').toJSON();
+			// Read through the editor rather than the underlying Y.Doc. This is the
+			// content the user can actually see, and it avoids depending on the
+			// Yjs fragment name, which has to match the Liveblocks extension's
+			// `field` and fails silently when it does not.
+			const documentData = editor.blocksToMarkdownLossy().trim();
+
+			if (!documentData) {
+				toast.error('There is nothing in this document to translate yet.');
+				return;
+			}
 
 			const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/translate-document-summary`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					documentData,
-					targetLang: language,
+					// The worker destructures `targetLanguage`. Sending any other key
+					// leaves target_lang undefined on the m2m100 call.
+					targetLanguage: language,
 				}),
 			});
 
-			if (res.ok) {
-				const { translated_text } = await res.json();
-				setSummary(translated_text);
-
-				toast.success('Translated document summary successfully.');
+			if (!res.ok) {
+				console.error('Translate worker responded with', res.status, await res.text());
+				toast.error('Failed to translate the document summary.');
+				return;
 			}
+
+			const { translated_text } = await res.json();
+			setSummary(translated_text);
+
+			toast.success('Translated document summary successfully.');
 		});
 	};
 
@@ -77,7 +95,7 @@ const TranslateDocSummary = ({ doc }: { doc: Y.Doc }) => {
 							<p className="font-bold">GPT {isPending ? 'is thinking...' : 'says'}</p>
 						</div>
 
-                        <p>{isPending? "Thinking...": <Markdown>{summary}</Markdown>}</p>
+						<p>{isPending ? 'Thinking...' : <Markdown>{summary}</Markdown>}</p>
 					</div>
 				)}
 

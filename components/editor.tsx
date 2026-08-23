@@ -5,8 +5,6 @@ import { Button } from './ui/button';
 import { MoonIcon, SunIcon } from 'lucide-react';
 import { BlockNoteView } from '@blocknote/shadcn';
 import { useCreateBlockNoteWithLiveblocks, useIsEditorReady } from '@liveblocks/react-blocknote';
-import { useRoom } from '@liveblocks/react/suspense';
-import { getYjsProviderForRoom } from '@liveblocks/yjs';
 import LoadingSpinner from './loading-spinner';
 import '@blocknote/shadcn/style.css';
 import '@liveblocks/react-blocknote/styles.css';
@@ -23,10 +21,6 @@ const Editor = () => {
 	//
 	// The collaborator name and cursor colour come from the `userInfo` set in
 	// prepareSession() in app/api/auth-endpoint/route.ts.
-	//
-	// Uses the default "default" Y.Doc fragment rather than the
-	// "document-store" fragment the hand-rolled setup wrote to, since that one
-	// was written by @blocknote/core's own ySync implementation.
 	const editor = useCreateBlockNoteWithLiveblocks({});
 
 	// True once the Yjs provider reaches "synchronizing"/"synchronized".
@@ -36,12 +30,6 @@ const Editor = () => {
 	// which throws "RangeError: Position N out of range" as soon as a second
 	// client joins the room.
 	const isEditorReady = useIsEditorReady();
-
-	// getYjsProviderForRoom caches providers in a WeakMap keyed by room, so this
-	// returns the very provider the Liveblocks extension already created rather
-	// than opening a second one that would double-apply updates.
-	const room = useRoom();
-	const doc = getYjsProviderForRoom(room).getYDoc();
 
 	const style = `hover:text-white ${
 		darkMode
@@ -54,7 +42,7 @@ const Editor = () => {
 			<div className="flex items-center gap-2 justify-end mb-10">
 				{/* Features */}
 				{/* TranslateDoc - AI */}
-				<TranslateDocSummary doc={doc} />
+				<TranslateDocSummary editor={editor} />
 				{/* ChatToDocument - AI */}
 
 				{/* Dark Mode toggle */}
